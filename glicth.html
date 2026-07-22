@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSS Glitch Effect</title>
+    <style>
+        /* Minimal Dark Setup */
+        body {
+            background: #050505;
+            color: white;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overflow: hidden;
+        }
+
+        .glitch-wrapper {
+            text-align: center;
+        }
+
+        /* The Glitch Logic */
+        .glitch {
+            position: relative;
+            font-size: 5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            /* Animation for the main text shake */
+            animation: glitch-skew 1s infinite linear alternate-reverse;
+        }
+
+        /* Create layers using the data-text attribute */
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050505; /* Matches body background to mask the "slices" */
+        }
+
+        /* The Red/Cyan offset layer */
+        .glitch::before {
+            left: 2px;
+            text-shadow: -2px 0 #ff00c1;
+            clip-path: inset(45% 0 44% 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        /* The Blue/Green offset layer */
+        .glitch::after {
+            left: -2px;
+            text-shadow: -2px 0 #00fff9, 2px 2px #ff00c1;
+            animation: glitch-anim2 1s infinite linear alternate-reverse;
+        }
+
+        /* Keyframes for the "slice" moving effect */
+        @keyframes glitch-anim {
+            0% { clip-path: inset(80% 0 1% 0); }
+            10% { clip-path: inset(10% 0 58% 0); }
+            20% { clip-path: inset(51% 0 33% 0); }
+            30% { clip-path: inset(23% 0 29% 0); }
+            40% { clip-path: inset(34% 0 14% 0); }
+            50% { clip-path: inset(58% 0 43% 0); }
+            60% { clip-path: inset(20% 0 80% 0); }
+            70% { clip-path: inset(77% 0 21% 0); }
+            80% { clip-path: inset(99% 0 2% 0); }
+            90% { clip-path: inset(15% 0 16% 0); }
+            100% { clip-path: inset(40% 0 43% 0); }
+        }
+
+        @keyframes glitch-anim2 {
+            0% { clip-path: inset(10% 0 80% 0); }
+            20% { clip-path: inset(30% 0 20% 0); }
+            40% { clip-path: inset(50% 0 50% 0); }
+            60% { clip-path: inset(10% 0 70% 0); }
+            80% { clip-path: inset(80% 0 10% 0); }
+            100% { clip-path: inset(40% 0 40% 0); }
+        }
+
+        /* Slight shake for the main text */
+        @keyframes glitch-skew {
+            0% { transform: skew(0deg); }
+            20% { transform: skew(-1deg); }
+            40% { transform: skew(1deg); }
+            60% { transform: skew(-2deg); }
+            80% { transform: skew(1deg); }
+            100% { transform: skew(0deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .glitch { font-size: 2.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glitch-wrapper">
+        <!-- data-text must match the inner text -->
+        <h1 class="glitch" data-text="SYSTEM_ERROR">SYSTEM_ERROR</h1>
+    </div>
+
+</body>
+</html>
