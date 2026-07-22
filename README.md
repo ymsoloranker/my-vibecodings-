@@ -1,1 +1,5 @@
-My vibecoding playground. Where I test ideas, build small scripts, and ship code fast. No expectations. Just execution.
+My vibecoding playground.
+
+I learn by building random stuff with AI.
+Nothing here is production ready.
+Just experiments, curiosity and lots of commits.
