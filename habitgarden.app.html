@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Garden — Grow Your Routine</title>
+    
+    <!-- External Assets: Typography & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            /* Linear/Notion Style Dark Palette */
+            --bg-deep: #09090b;
+            --bg-card: #18181b;
+            --bg-elevated: #27272a;
+            --text-main: #fafafa;
+            --text-dim: #a1a1aa;
+            --accent: #10b981; /* Emerald */
+            --accent-sakura: #f472b6; /* Sakura Pink */
+            --border: rgba(255, 255, 255, 0.1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Layout Structure */
+        .app-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+
+        /* Header & Quote */
+        header {
+            margin-bottom: 48px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .brand h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            margin-bottom: 8px;
+        }
+
+        .quote-container {
+            font-size: 14px;
+            color: var(--text-dim);
+            font-style: italic;
+            max-width: 400px;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            color: var(--text-dim);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* Toolbar (Search & Actions) */
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: white;
+            outline: none;
+            min-width: 200px;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .btn {
+            background: var(--bg-elevated);
+            color: white;
+            border: 1px solid var(--border);
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .btn:hover {
+            background: #3f3f46;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border: none;
+            color: black;
+        }
+
+        .btn-primary:hover {
+            background: #34d399;
+        }
+
+        /* Habit List */
+        .habit-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        .habit-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 16px 24px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: var(--transition);
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .habit-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .habit-visual {
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg-elevated);
+            border-radius: 12px;
+        }
+
+        .habit-details h3 {
+            font-size: 16px;
+            margin-bottom: 2px;
+        }
+
+        .habit-meta {
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        .habit-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .complete-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            color: transparent;
+        }
+
+        .habit-item.completed .complete-btn {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: black;
+        }
+
+        .habit-item.completed {
+            border-color: rgba(16, 185, 129, 0.3);
+        }
+
+        .delete-btn {
+            color: #ef4444;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            opacity: 0.3;
+            transition: var(--transition);
+        }
+
+        .habit-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 32px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .modal h2 { margin-bottom: 20px; }
+
+        .form-group { margin-bottom: 20px; }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .modal input {
+            width: 100%;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+        }
+
+        /* Growth Icons Styling */
+        .stage-seed { color: #71717a; }
+        .stage-plant { color: #4ade80; }
+        .stage-tree { color: #16a34a; }
+        .stage-sakura { color: #f472b6; filter: drop-shadow(0 0 5px #f472b6); }
+
+        /* Keyboard Shortcut Hint */
+        .shortcuts-hint {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 12px;
+            color: var(--text-dim);
+            background: var(--bg-card);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        kbd {
+            background: #3f3f46;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 10px;
+        }
+
+        @media (max-width: 600px) {
+            header { flex-direction: column; gap: 16px; }
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container" id="capture-area">
+        <header>
+            <div class="brand">
+                <h1>Habit Garden</h1>
+                <div id="quote" class="quote-container">Loading inspiration...</div>
+            </div>
+            <div class="header-actions">
+                <button class="btn" onclick="exportAsImage()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    Export PNG
+                </button>
+            </div>
+        </header>
+
+        <!-- Stats Section -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Total Completed</div>
+                <div id="stat-total" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Longest Streak</div>
+                <div id="stat-streak" class="stat-value">0d</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Success Rate</div>
+                <div id="stat-rate" class="stat-value">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Garden Age</div>
+                <div id="stat-days" class="stat-value">0d</div>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <input type="text" id="habitSearch" class="search-input" placeholder="Search habits... (Press '/' to focus)">
+            <button class="btn btn-primary" onclick="toggleModal(true)">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                New Habit
+            </button>
+        </div>
+
+        <!-- Habit List Container -->
+        <div id="habitList" class="habit-list">
+            <!-- Habit items will be injected here -->
+        </div>
+    </div>
+
+    <!-- Modal for adding habits -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div class="modal">
+            <h2>Add Habit</h2>
+            <div class="form-group">
+                <label>Habit Name</label>
+                <input type="text" id="habitNameInput" placeholder="e.g. Read 20 pages" autofocus>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn" onclick="toggleModal(false)">Cancel</button>
+                <button class="btn btn-primary" onclick="addHabit()">Plant Seed</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="shortcuts-hint">
+        <kbd>N</kbd> New Habit &nbsp; <kbd>/</kbd> Search &nbsp; <kbd>ESC</kbd> Close
+    </div>
+
+    <script>
+        /**
+         * GLOBAL STATE & CONFIG
+         */
+        let habits = JSON.parse(localStorage.getItem('habitGardenData')) || [];
+        const quotes = [
+            "The secret of your future is hidden in your daily routine.",
+            "Don't break the chain. — Jerry Seinfeld",
+            "Small habits make a big difference.",
+            "Your garden grows one day at a time.",
+            "Discipline is choosing between what you want now and what you want most."
+        ];
+
+        /**
+         * CORE LOGIC
+         */
+
+        // Growth Stage Logic
+        const getGrowthStage = (streak) => {
+            if (streak >= 100) return { name: 'Sakura Tree', class: 'stage-sakura', icon: '🌸' };
+            if (streak >= 30) return { name: 'Young Tree', class: 'stage-tree', icon: '🌳' };
+            if (streak >= 7) return { name: 'Small Plant', class: 'stage-plant', icon: '🌿' };
+            return { name: 'Seed', class: 'stage-seed', icon: '🌱' };
+        };
+
+        // Streak Calculation Logic
+        const calculateStreak = (logs) => {
+            if (!logs.length) return 0;
+            const sortedLogs = [...new Set(logs)].sort().reverse();
+            let streak = 0;
+            let today = new Date().toISOString().split('T')[0];
+            let yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            yesterday = yesterday.toISOString().split('T')[0];
+
+            // If not completed today or yesterday, streak is broken
+            if (sortedLogs[0] !== today && sortedLogs[0] !== yesterday) return 0;
+
+            let checkDate = new Date(sortedLogs[0]);
+            for (let i = 0; i < sortedLogs.length; i++) {
+                let logDate = new Date(sortedLogs[i]);
+                if (i === 0 || (checkDate - logDate) / (1000 * 60 * 60 * 24) <= 1) {
+                    streak++;
+                    checkDate = logDate;
+                } else {
+                    break;
+                }
+            }
+            return streak;
+        };
+
+        // Render UI
+        const render = () => {
+            const list = document.getElementById('habitList');
+            const searchTerm = document.getElementById('habitSearch').value.toLowerCase();
+            const filtered = habits.filter(h => h.name.toLowerCase().includes(searchTerm));
+            
+            list.innerHTML = '';
+            
+            filtered.forEach(habit => {
+                const today = new Date().toISOString().split('T')[0];
+                const isCompletedToday = habit.logs.includes(today);
+                const streak = calculateStreak(habit.logs);
+                const stage = getGrowthStage(streak);
+
+                const item = document.createElement('div');
+                item.className = `habit-item ${isCompletedToday ? 'completed' : ''}`;
+                item.innerHTML = `
+                    <div class="habit-info">
+                        <div class="habit-visual ${stage.class}" title="${stage.name}">
+                            <span style="font-size: 24px">${stage.icon}</span>
+                        </div>
+                        <div class="habit-details">
+                            <h3>${habit.name}</h3>
+                            <div class="habit-meta">
+                                <span>${streak} day streak</span> • 
+                                <span>Stage: ${stage.name}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="habit-actions">
+                        <button class="delete-btn" onclick="deleteHabit('${habit.id}')">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                        <button class="complete-btn" onclick="toggleHabit('${habit.id}')">
+                            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+            updateStats();
+            save();
+        };
+
+        const updateStats = () => {
+            const totalLogs = habits.reduce((acc, h) => acc + h.logs.length, 0);
+            const maxStreak = Math.max(...habits.map(h => calculateStreak(h.logs)), 0);
+            
+            // Calculate Garden Age (Days since first habit created)
+            let daysActive = 0;
+            if (habits.length) {
+                const startDates = habits.map(h => h.createdAt);
+                const firstDay = new Date(Math.min(...startDates));
+                daysActive = Math.ceil((new Date() - firstDay) / (1000 * 60 * 60 * 24)) || 1;
+            }
+
+            document.getElementById('stat-total').innerText = totalLogs;
+            document.getElementById('stat-streak').innerText = `${maxStreak}d`;
+            document.getElementById('stat-days').innerText = `${daysActive}d`;
+            
+            const completionRate = habits.length 
+                ? Math.round((totalLogs / (habits.length * daysActive)) * 100) 
+                : 0;
+            document.getElementById('stat-rate').innerText = `${Math.min(completionRate, 100)}%`;
+        };
+
+        /**
+         * ACTIONS
+         */
+
+        const addHabit = () => {
+            const input = document.getElementById('habitNameInput');
+            if (!input.value.trim()) return;
+
+            const newHabit = {
+                id: Date.now().toString(),
+                name: input.value.trim(),
+                createdAt: Date.now(),
+                logs: []
+            };
+
+            habits.push(newHabit);
+            input.value = '';
+            toggleModal(false);
+            render();
+        };
+
+        const toggleHabit = (id) => {
+            const habit = habits.find(h => h.id === id);
+            const today = new Date().toISOString().split('T')[0];
+            const index = habit.logs.indexOf(today);
+
+            if (index > -1) {
+                habit.logs.splice(index, 1);
+            } else {
+                habit.logs.push(today);
+                triggerCelebrate();
+            }
+            render();
+        };
+
+        const deleteHabit = (id) => {
+            if (confirm('Are you sure you want to remove this habit and its progress?')) {
+                habits = habits.filter(h => h.id !== id);
+                render();
+            }
+        };
+
+        const save = () => {
+            localStorage.setItem('habitGardenData', JSON.stringify(habits));
+        };
+
+        // Modal Utility
+        const toggleModal = (show) => {
+            document.getElementById('modalOverlay').style.display = show ? 'flex' : 'none';
+            if (show) document.getElementById('habitNameInput').focus();
+        };
+
+        // Export Functionality
+        const exportAsImage = () => {
+            const area = document.getElementById('capture-area');
+            html2canvas(area, { backgroundColor: '#09090b' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `habit-garden-progress.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        };
+
+        // Celebration
+        const triggerCelebrate = () => {
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#10b981', '#f472b6', '#ffffff']
+            });
+        };
+
+        /**
+         * INITIALIZATION & EVENT LISTENERS
+         */
+
+        // Search filtering
+        document.getElementById('habitSearch').addEventListener('input', render);
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'n' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                toggleModal(true);
+            }
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                document.getElementById('habitSearch').focus();
+            }
+            if (e.key === 'Escape') {
+                toggleModal(false);
+            }
+        });
+
+        // Initialize Quote
+        document.getElementById('quote').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+
+        // Initial Render
+        render();
+
+    </script>
+</body>
+</html>
