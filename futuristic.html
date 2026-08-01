@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS — Future Interface</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --bg-elevated: rgba(8, 14, 28, 0.72);
+            --cyan: #00f0ff;
+            --cyan-dim: rgba(0, 240, 255, 0.35);
+            --purple: #a855f7;
+            --purple-dim: rgba(168, 85, 247, 0.35);
+            --pink: #ec4899;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: rgba(0, 240, 255, 0.18);
+            --glow: 0 0 30px rgba(0, 240, 255, 0.25);
+            --font-display: 'Orbitron', sans-serif;
+            --font-body: 'Rajdhani', sans-serif;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ── Canvas Background ── */
+        #particle-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .scanlines {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 240, 255, 0.015) 2px,
+                rgba(0, 240, 255, 0.015) 4px
+            );
+        }
+
+        .vignette {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(ellipse at center, transparent 40%, rgba(3, 7, 18, 0.85) 100%);
+        }
+
+        /* ── Navigation ── */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2.5rem;
+            backdrop-filter: blur(16px);
+            background: rgba(3, 7, 18, 0.55);
+            border-bottom: 1px solid var(--border);
+            transition: padding 0.3s ease, background 0.3s ease;
+        }
+
+        nav.scrolled {
+            padding: 0.65rem 2.5rem;
+            background: rgba(3, 7, 18, 0.88);
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-weight: 900;
+            font-size: 1.35rem;
+            letter-spacing: 0.25em;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            transition: color 0.25s ease, text-shadow 0.25s ease;
+            position: relative;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 1px;
+            background: var(--cyan);
+            box-shadow: 0 0 8px var(--cyan);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active {
+            color: var(--cyan);
+            text-shadow: 0 0 12px var(--cyan-dim);
+        }
+
+        .nav-links a:hover::after,
+        .nav-links a.active::after {
+            width: 100%;
+        }
+
+        .nav-cta {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            padding: 0.6rem 1.4rem;
+            border: 1px solid var(--cyan);
+            background: rgba(0, 240, 255, 0.08);
+            color: var(--cyan);
+            cursor: pointer;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+        }
+
+        .nav-cta:hover {
+            background: rgba(0, 240, 255, 0.2);
+            box-shadow: var(--glow);
+        }
+
+        .menu-toggle {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .menu-toggle span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--cyan);
+            transition: transform 0.3s ease;
+        }
+
+        /* ── Layout ── */
+        main {
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 6rem 2rem;
+            position: relative;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        /* ── Reveal Animations ── */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+                        transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reveal-delay-1 { transition-delay: 0.1s; }
+        .reveal-delay-2 { transition-delay: 0.2s; }
+        .reveal-delay-3 { transition-delay: 0.3s; }
+        .reveal-delay-4 { transition-delay: 0.4s; }
+
+        /* ── Hero ── */
+        #hero {
+            flex-direction: column;
+            text-align: center;
+            padding-top: 8rem;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--cyan);
+            margin-bottom: 2rem;
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        .hero-badge .pulse {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--cyan);
+            box-shadow: 0 0 10px var(--cyan);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(0.85); }
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.8rem, 8vw, 6rem);
+            font-weight: 900;
+            line-height: 1.05;
+            letter-spacing: 0.04em;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title .gradient {
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 50%, var(--pink) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            background-size: 200% 200%;
+            animation: gradient-shift 6s ease infinite;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            color: var(--text-muted);
+            max-width: 560px;
+            margin: 0 auto 3rem;
+            font-weight: 400;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            font-family: var(--font-display);
+            font-size: 0.8rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            padding: 1rem 2rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.35s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            color: #030712;
+            font-weight: 700;
+            clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 40px rgba(0, 240, 255, 0.4), 0 0 60px rgba(168, 85, 247, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            clip-path: polygon(12px 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            box-shadow: inset 0 0 20px rgba(0, 240, 255, 0.08);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .scroll-indicator .line {
+            width: 1px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--cyan), transparent);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(8px); }
+        }
+
+        /* ── HUD Ring ── */
+        .hud-ring {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            border: 1px solid rgba(0, 240, 255, 0.08);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: rotate 30s linear infinite;
+        }
+
+        .hud-ring::before {
+            content: '';
+            position: absolute;
+            inset: 30px;
+            border: 1px dashed rgba(168, 85, 247, 0.12);
+            border-radius: 50%;
+        }
+
+        .hud-ring::after {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            width: 8px;
+            height: 8px;
+            background: var(--cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 12px var(--cyan);
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Section Headers ── */
+        .section-label {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--cyan);
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4vw, 2.8rem);
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        .section-desc {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 520px;
+            margin-bottom: 3.5rem;
+        }
+
+        /* ── Features Grid ── */
+        #features {
+            align-items: flex-start;
+            padding-top: 8rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+            clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            border-color: rgba(0, 240, 255, 0.4);
+            box-shadow: var(--glow);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border);
+            margin-bottom: 1.25rem;
+            font-size: 1.4rem;
+            color: var(--cyan);
+            background: rgba(0, 240, 255, 0.06);
+        }
+
+        .feature-card h3 {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .feature-index {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            font-family: var(--font-display);
+            font-size: 0.65rem;
+            color: rgba(0, 240, 255, 0.3);
+            letter-spacing: 0.1em;
+        }
+
+        /* ── Flow Timeline ── */
+        #flow {
+            background: linear-gradient(180deg, transparent, rgba(0, 240, 255, 0.03), transparent);
+        }
+
+        .timeline {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 28px;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: linear-gradient(to bottom, transparent, var(--cyan), var(--purple), transparent);
+        }
+
+        .timeline-step {
+            display: flex;
+            gap: 2rem;
+            padding: 2rem 0;
+            position: relative;
+        }
+
+        .step-marker {
+            flex-shrink: 0;
+            width: 56px;
+            height: 56px;
+            border: 1px solid var(--cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-display);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--cyan);
+            background: var(--bg);
+            position: relative;
+            z-index: 2;
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            transition: box-shadow 0.4s ease, background 0.4s ease;
+        }
+
+        .timeline-step:hover .step-marker {
+            background: rgba(0, 240, 255, 0.15);
+            box-shadow: 0 0 24px rgba(0, 240, 255, 0.4);
+        }
+
+        .step-content {
+            flex: 1;
+            padding-top: 0.5rem;
+        }
+
+        .step-content h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.5rem;
+        }
+
+        .step-content p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+
+        .step-tag {
+            display: inline-block;
+            margin-top: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            border: 1px solid var(--purple-dim);
+            color: var(--purple);
+            background: rgba(168, 85, 247, 0.08);
+        }
+
+        /* ── Stats ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 2.5rem 1.5rem;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            transform: scaleX(0);
+            transition: transform 0.5s ease;
+        }
+
+        .stat-card:hover::after {
+            transform: scaleX(1);
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--cyan), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        /* ── Terminal Panel ── */
+        #terminal-section {
+            padding: 6rem 2rem;
+        }
+
+        .terminal-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .terminal {
+            background: rgba(3, 7, 18, 0.9);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), var(--glow);
+        }
+
+        .terminal-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 240, 255, 0.05);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .terminal-dot.red { background: #ef4444; }
+        .terminal-dot.yellow { background: #eab308; }
+        .terminal-dot.green { background: #22c55e; }
+
+        .terminal-title {
+            margin-left: auto;
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .terminal-body {
+            padding: 1.5rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            min-height: 280px;
+        }
+
+        .terminal-body .prompt {
+            color: var(--cyan);
+        }
+
+        .terminal-body .cmd {
+            color: var(--text);
+        }
+
+        .terminal-body .output {
+            color: var(--text-muted);
+        }
+
+        .terminal-body .success {
+            color: #22c55e;
+        }
+
+        .terminal-body .highlight {
+            color: var(--purple);
+        }
+
+        .cursor-blink {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--cyan);
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+
+        /* ── CTA ── */
+        #cta {
+            text-align: center;
+            min-height: 70vh;
+        }
+
+        .cta-box {
+            padding: 4rem 3rem;
+            border: 1px solid var(--border);
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.06), rgba(168, 85, 247, 0.06));
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            inset: -50%;
+            background: conic-gradient(from 0deg, transparent, var(--cyan-dim), transparent, var(--purple-dim), transparent);
+            animation: cta-spin 8s linear infinite;
+            opacity: 0.3;
+        }
+
+        .cta-box > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes cta-spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .cta-box h2 {
+            font-family: var(--font-display);
+            font-size: clamp(1.6rem, 4vw, 2.5rem);
+            letter-spacing: 0.06em;
+            margin-bottom: 1rem;
+        }
+
+        .cta-box p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            margin-bottom: 2rem;
+            max-width: 480px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* ── Footer ── */
+        footer {
+            position: relative;
+            z-index: 10;
+            padding: 2rem;
+            text-align: center;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 0.1em;
+        }
+
+        footer span {
+            color: var(--cyan);
+        }
+
+        /* ── Progress Bar ── */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--cyan), var(--purple));
+            z-index: 200;
+            width: 0%;
+            box-shadow: 0 0 10px var(--cyan);
+            transition: width 0.1s linear;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 968px) {
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .terminal-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .hud-ring {
+                width: 300px;
+                height: 300px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            nav {
+                padding: 1rem 1.25rem;
+            }
+
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                flex-direction: column;
+                gap: 0;
+                background: rgba(3, 7, 18, 0.95);
+                border-bottom: 1px solid var(--border);
+                padding: 1rem 0;
+            }
+
+            .nav-links.open {
+                display: flex;
+            }
+
+            .nav-links li a {
+                display: block;
+                padding: 0.75rem 1.25rem;
+            }
+
+            .nav-cta {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: flex;
+            }
+
+            .stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            section {
+                padding: 5rem 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scroll-progress" id="scroll-progress"></div>
+    <canvas id="particle-canvas"></canvas>
+    <div class="scanlines"></div>
+    <div class="vignette"></div>
+
+    <nav id="navbar">
+        <div class="logo">NEXUS</div>
+        <ul class="nav-links" id="nav-links">
+            <li><a href="#hero" class="active">Home</a></li>
+            <li><a href="#features">Systems</a></li>
+            <li><a href="#flow">Flow</a></li>
+            <li><a href="#stats">Metrics</a></li>
+            <li><a href="#cta">Connect</a></li>
+        </ul>
+        <button class="nav-cta">Launch</button>
+        <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
+            <span></span><span></span><span></span>
+        </button>
+    </nav>
+
+    <main>
+        <!-- Hero -->
+        <section id="hero">
+            <div class="hud-ring" style="top: 50%; left: 50%; transform: translate(-50%, -50%);"></div>
+            <div class="container">
+                <div class="hero-badge reveal">
+                    <span class="pulse"></span>
+                    System Online — v2.0.26
+                </div>
+                <h1 class="hero-title reveal reveal-delay-1">
+                    Interface<br>of the <span class="gradient">Future</span>
+                </h1>
+                <p class="hero-subtitle reveal reveal-delay-2">
+                    Seamless neural pathways. Adaptive UI flows. 
+                    Experience the next generation of digital interaction.
+                </p>
+                <div class="hero-actions reveal reveal-delay-3">
+                    <button class="btn btn-primary">Initialize</button>
+                    <button class="btn btn-ghost">Explore Systems</button>
+                </div>
+            </div>
+            <div class="scroll-indicator">
+                <span>Scroll</span>
+                <div class="line"></div>
+            </div>
+        </section>
+
+        <!-- Features -->
+        <section id="features">
+            <div class="container">
+                <p class="section-label reveal">Core Systems</p>
+                <h2 class="section-title reveal reveal-delay-1">Built for Tomorrow</h2>
+                <p class="section-desc reveal reveal-delay-2">
+                    Modular architecture designed for infinite scalability and zero-latency response.
+                </p>
+                <div class="features-grid">
+                    <div class="feature-card reveal reveal-delay-1">
+                        <span class="feature-index">01</span>
+                        <div class="feature-icon">◈</div>
+                        <h3>Neural Sync</h3>
+                        <p>Real-time adaptive rendering that responds to user intent before input is registered.</p>
+                    </div>
+                    <div class="feature-card reveal reveal-delay-2">
+                        <span class="feature-index">02</span>
+                        <div class="feature-icon">⬡</div>
+                        <h3>Quantum Grid</h3>
+                        <p>Distributed mesh network ensuring 99.999% uptime across all connected nodes.</p>
+                    </div>
+                    <div class="feature-card reveal reveal-delay-3">
+                        <span class="feature-index">03</span>
+                        <div class="feature-icon">◎</div>
+                        <h3>Holo Display</h3>
+                        <p>Layered depth UI with parallax fields and volumetric light scattering effects.</p>
+                    </div>
+                    <div class="feature-card reveal reveal-delay-1">
+                        <span class="feature-index">04</span>
+                        <div class="feature-icon">⬢</div>
+                        <h3>Shield Core</h3>
+                        <p>End-to-end encryption with biometric authentication and zero-trust architecture.</p>
+                    </div>
+                    <div class="feature-card reveal reveal-delay-2">
+                        <span class="feature-index">05</span>
+                        <div class="feature-icon">◉</div>
+                        <h3>Pulse Engine</h3>
+                        <p>Sub-millisecond data pipelines powered by predictive caching algorithms.</p>
+                    </div>
+                    <div class="feature-card reveal reveal-delay-3">
+                        <span class="feature-index">06</span>
+                        <div class="feature-icon">◇</div>
+                        <h3>Void Link</h3>
+                        <p>Cross-dimensional API bridges connecting legacy systems to the new frontier.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Flow Timeline -->
+        <section id="flow">
+            <div class="container">
+                <p class="section-label reveal">Process Flow</p>
+                <h2 class="section-title reveal reveal-delay-1">How It Works</h2>
+                <p class="section-desc reveal reveal-delay-2">
+                    From initialization to full deployment — a streamlined pipeline built for speed.
+                </p>
+                <div class="timeline">
+                    <div class="timeline-step reveal">
+                        <div class="step-marker">01</div>
+                        <div class="step-content">
+                            <h3>Authenticate & Connect</h3>
+                            <p>Secure handshake with the NEXUS core. Biometric verification completes in under 200ms.</p>
+                            <span class="step-tag">Phase: Init</span>
+                        </div>
+                    </div>
+                    <div class="timeline-step reveal reveal-delay-1">
+                        <div class="step-marker">02</div>
+                        <div class="step-content">
+                            <h3>Calibrate Interface</h3>
+                            <p>AI analyzes your interaction patterns and configures the UI layout to match your workflow.</p>
+                            <span class="step-tag">Phase: Sync</span>
+                        </div>
+                    </div>
+                    <div class="timeline-step reveal reveal-delay-2">
+                        <div class="step-marker">03</div>
+                        <div class="step-content">
+                            <h3>Deploy Modules</h3>
+                            <p>Select from 200+ pre-built components. Drag, drop, and deploy across your entire stack.</p>
+                            <span class="step-tag">Phase: Build</span>
+                        </div>
+                    </div>
+                    <div class="timeline-step reveal reveal-delay-3">
+                        <div class="step-marker">04</div>
+                        <div class="step-content">
+                            <h3>Go Live</h3>
+                            <p>One-click deployment to global edge nodes. Monitor performance in real-time from the command center.</p>
+                            <span class="step-tag">Phase: Launch</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section id="stats">
+            <div class="container">
+                <p class="section-label reveal">Live Metrics</p>
+                <h2 class="section-title reveal reveal-delay-1">System Performance</h2>
+                <div class="stats-row">
+                    <div class="stat-card reveal reveal-delay-1">
+                        <div class="stat-value" data-target="99.9">0</div>
+                        <div class="stat-label">Uptime %</div>
+                    </div>
+                    <div class="stat-card reveal reveal-delay-2">
+                        <div class="stat-value" data-target="847">0</div>
+                        <div class="stat-label">Nodes Active</div>
+                    </div>
+                    <div class="stat-card reveal reveal-delay-3">
+                        <div class="stat-value" data-target="12">0</div>
+                        <div class="stat-label">ms Latency</div>
+                    </div>
+                    <div class="stat-card reveal reveal-delay-4">
+                        <div class="stat-value" data-target="2.4">0</div>
+                        <div class="stat-label">PB Processed</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Terminal -->
+        <section id="terminal-section">
+            <div class="container">
+                <div class="terminal-wrapper">
+                    <div>
+                        <p class="section-label reveal">Command Center</p>
+                        <h2 class="section-title reveal reveal-delay-1">Full Control</h2>
+                        <p class="section-desc reveal reveal-delay-2" style="margin-bottom: 0;">
+                            Monitor, configure, and deploy from a unified terminal interface. 
+                            Every command logged, every action traceable.
+                        </p>
+                    </div>
+                    <div class="terminal reveal reveal-delay-2">
+                        <div class="terminal-bar">
+                            <span class="terminal-dot red"></span>
+                            <span class="terminal-dot yellow"></span>
+                            <span class="terminal-dot green"></span>
+                            <span class="terminal-title">nexus-shell v2.0</span>
+                        </div>
+                        <div class="terminal-body" id="terminal-body">
+                            <div><span class="prompt">nexus@core:~$</span> <span class="cmd">system status --all</span></div>
+                            <div class="output" id="terminal-output"></div>
+                            <div><span class="prompt">nexus@core:~$</span> <span class="cursor-blink"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA -->
+        <section id="cta">
+            <div class="container">
+                <div class="cta-box reveal">
+                    <h2>Ready to Enter the Nexus?</h2>
+                    <p>Join thousands of pioneers already building on the next-generation interface platform.</p>
+                    <button class="btn btn-primary">Get Early Access</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 <span>NEXUS</span> — Future Interface Systems</p>
+    </footer>
+
+    <script>
+        /* ── Particle Network ── */
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let mouse = { x: null, y: null, radius: 120 };
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class Particle {
+            constructor() {
+                this.reset();
+            }
+
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 1.5 + 0.5;
+                this.speedX = (Math.random() - 0.5) * 0.4;
+                this.speedY = (Math.random() - 0.5) * 0.4;
+                this.opacity = Math.random() * 0.5 + 0.2;
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (mouse.x !== null) {
+                    const dx = mouse.x - this.x;
+                    const dy = mouse.y - this.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < mouse.radius) {
+                        const force = (mouse.radius - dist) / mouse.radius;
+                        this.x -= dx * force * 0.02;
+                        this.y -= dy * force * 0.02;
+                    }
+                }
+
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 240, 255, ${this.opacity})`;
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const count = Math.min(Math.floor((canvas.width * canvas.height) / 12000), 120);
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function connectParticles() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    const dx = particles[i].x - particles[j].x;
+                    const dy = particles[i].y - particles[j].y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 130) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(0, 240, 255, ${0.08 * (1 - dist / 130)})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.moveTo(particles[i].x, particles[i].y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            connectParticles();
+            requestAnimationFrame(animateParticles);
+        }
+
+        resizeCanvas();
+        initParticles();
+        animateParticles();
+
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            initParticles();
+        });
+
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mouseleave', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        /* ── Scroll Reveal ── */
+        const revealEls = document.querySelectorAll('.reveal');
+        const revealObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+        revealEls.forEach(el => revealObserver.observe(el));
+
+        /* ── Scroll Progress ── */
+        const progressBar = document.getElementById('scroll-progress');
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.scrollY;
+            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const progress = (scrollTop / docHeight) * 100;
+            progressBar.style.width = progress + '%';
+
+            document.getElementById('navbar').classList.toggle('scrolled', scrollTop > 50);
+        });
+
+        /* ── Active Nav Link ── */
+        const sections = document.querySelectorAll('section[id]');
+        const navLinks = document.querySelectorAll('.nav-links a');
+
+        window.addEventListener('scroll', () => {
+            let current = '';
+            sections.forEach(section => {
+                const top = section.offsetTop - 120;
+                if (window.scrollY >= top) {
+                    current = section.getAttribute('id');
+                }
+            });
+            navLinks.forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+            });
+        });
+
+        /* ── Counter Animation ── */
+        function animateCounter(el) {
+            const target = parseFloat(el.dataset.target);
+            const isDecimal = target % 1 !== 0;
+            const duration = 2000;
+            const start = performance.now();
+
+            function update(now) {
+                const elapsed = now - start;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                const current = target * eased;
+
+                el.textContent = isDecimal ? current.toFixed(1) : Math.floor(current);
+                if (progress < 1) requestAnimationFrame(update);
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        const statObserver = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    animateCounter(entry.target);
+                    statObserver.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        document.querySelectorAll('.stat-value').forEach(el => statObserver.observe(el));
+
+        /* ── Terminal Typing ── */
+        const terminalLines = [
+            { text: '✓ Neural core .............. ONLINE', cls: 'success' },
+            { text: '✓ Quantum grid ............. 847 nodes synced', cls: 'success' },
+            { text: '✓ Shield protocol .......... ACTIVE', cls: 'success' },
+            { text: '→ Latency: 12ms | Throughput: 2.4 PB/s', cls: 'highlight' },
+            { text: 'All systems nominal. Ready for deployment.', cls: 'output' },
+        ];
+
+        const terminalOutput = document.getElementById('terminal-output');
+        let terminalStarted = false;
+
+        const terminalObserver = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && !terminalStarted) {
+                terminalStarted = true;
+                let lineIndex = 0;
+
+                function typeLine() {
+                    if (lineIndex >= terminalLines.length) return;
+                    const line = terminalLines[lineIndex];
+                    const div = document.createElement('div');
+                    div.className = line.cls;
+                    terminalOutput.appendChild(div);
+
+                    let charIndex = 0;
+                    const interval = setInterval(() => {
+                        div.textContent = line.text.slice(0, charIndex + 1);
+                        charIndex++;
+                        if (charIndex >= line.text.length) {
+                            clearInterval(interval);
+                            lineIndex++;
+                            setTimeout(typeLine, 300);
+                        }
+                    }, 25);
+                }
+
+                setTimeout(typeLine, 500);
+            }
+        }, { threshold: 0.5 });
+
+        terminalObserver.observe(document.getElementById('terminal-section'));
+
+        /* ── Mobile Menu ── */
+        document.getElementById('menu-toggle').addEventListener('click', () => {
+            document.getElementById('nav-links').classList.toggle('open');
+        });
+
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', () => {
+                document.getElementById('nav-links').classList.remove('open');
+            });
+        });
+
+        /* ── Button Ripple Effect ── */
+        document.querySelectorAll('.btn, .nav-cta').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const ripple = document.createElement('span');
+                const rect = this.getBoundingClientRect();
+                const size = Math.max(rect.width, rect.height);
+                ripple.style.cssText = `
+                    position: absolute;
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${e.clientX - rect.left - size / 2}px;
+                    top: ${e.clientY - rect.top - size / 2}px;
+                    background: rgba(255,255,255,0.3);
+                    border-radius: 50%;
+                    transform: scale(0);
+                    animation: ripple 0.6s ease-out;
+                    pointer-events: none;
+                `;
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+
+        const style = document.createElement('style');
+        style.textContent = '@keyframes ripple { to { transform: scale(2.5); opacity: 0; } }';
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
